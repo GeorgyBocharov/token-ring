@@ -1,40 +1,31 @@
 package com.atp.hw4.task2.entities;
 
+import com.atp.hw4.task2.entities.node.Node;
+import com.atp.hw4.task2.entities.node.WorkerNode;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class RingProcessor {
     private final int nodesAmount;
     private final int packagesPerNode;
     private final int processPerTime;
-    private final List<WorkerNode> nodes = new ArrayList<>();
-    private final AtomicBoolean processingFlag = new AtomicBoolean(false);
+    private final List<WorkerNode> nodes;
     private long startTime;
 
-    public RingProcessor(int nodesAmount, int packagesPerNode, int processPerTime, BlockingQueue<DataPackage> stack) {
+    public RingProcessor(int nodesAmount, int packagesPerNode, int processPerTime, List<WorkerNode> nodes) {
+        log.info("Creating processor with nodeNumber {}, packagesPerNode {}", nodesAmount, packagesPerNode);
         this.nodesAmount = nodesAmount;
         this.packagesPerNode = packagesPerNode;
         this.processPerTime = processPerTime;
-        for (int i = 0; i < nodesAmount; i++) {
-            nodes.add(new WorkerNode(i, processingFlag, packagesPerNode, processPerTime, stack));
-        }
-        for (int i = 0; i < nodesAmount - 1; i++) {
-            nodes.get(i).setNextNodeInfo(nodes.get(i + 1));
-        }
-        nodes.get(nodesAmount - 1).setNextNodeInfo(nodes.get(0));
+        this.nodes = nodes;
     }
 
     public void startProcessing() {
-        processingFlag.set(true);
         startTime = System.currentTimeMillis();
         nodes.forEach(Thread::start);
     }
-
 
 
     public Statistics getStats() {
@@ -63,7 +54,7 @@ public class RingProcessor {
     }
 
     public void stop() {
-        processingFlag.set(false);
+        nodes.forEach(WorkerNode::stopProcessing);
         for (WorkerNode node: nodes) {
             try {
                 node.join();
@@ -71,6 +62,9 @@ public class RingProcessor {
                 log.error("Failed to join node {}", node, ex);
             }
         }
+        Statistics finalStats = getStats();
+        int size = nodes.stream().map(WorkerNode::getBufferSize).reduce(Integer::sum).orElse(-1);
+        log.info("After stop packageLoss = {}, totalPackagesSize = {}", finalStats.getTotalLoss(), size);
     }
 
 }

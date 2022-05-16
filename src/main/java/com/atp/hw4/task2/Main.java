@@ -1,51 +1,49 @@
 package com.atp.hw4.task2;
 
-import com.atp.hw4.task2.entities.DataPackage;
 import com.atp.hw4.task2.entities.RingProcessor;
-import com.atp.hw4.task2.writer.CsvFileWriter;
+import com.atp.hw4.task2.service.CsvFileWriter;
+import com.atp.hw4.task2.service.factory.ArrayBlockingQueueFactory;
+import com.atp.hw4.task2.service.factory.LinkedBlockingQueueNodeFactory;
+import com.atp.hw4.task2.service.factory.NodeFactory;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
 
     public static void main(String[] args) {
-        List<Integer> nodeAmounts = List.of(3, 10, 20);
-        List<Integer> packagesNumber = List.of(5, 50, 100);
-        List<Integer> processPerTimeList = List.of(30, 80);
-//        startMeasurements("token-ring-test_", nodeAmounts, packagesNumber, processPerTimeList, new ArrayBlockingQueue<>(300));
-        startMeasurements("token-ring-linked-queue_", nodeAmounts, packagesNumber, processPerTimeList, new LinkedBlockingQueue<>());
+        List<Integer> nodeAmounts = List.of(3, 5, 10);
+        List<Integer> packagesNumber = List.of(5, 20, 60, 100);
+        startMeasurements("token-ring-test_", nodeAmounts, packagesNumber, new ArrayBlockingQueueFactory());
+        startMeasurements("token-ring-linked-queue_", nodeAmounts, packagesNumber, new LinkedBlockingQueueNodeFactory());
     }
 
     private static void startMeasurements(String prefix, List<Integer> nodeAmounts,
-                                          List<Integer> packagesNumber, List<Integer> processPerTimeList,
-                                          BlockingQueue<DataPackage> stack) {
-        CsvFileWriter writer = new CsvFileWriter(prefix);
+                                          List<Integer> packagesNumber,
+                                          NodeFactory nodeFactory) {
         for (Integer nodeAmount : nodeAmounts) {
             for (Integer packagesPerNode : packagesNumber) {
-                measureStats(writer, nodeAmount, packagesPerNode, 1, stack);
+                measureStats(prefix, nodeAmount, packagesPerNode, packagesPerNode, nodeFactory);
             }
-        }
-        for (Integer processPerTime : processPerTimeList) {
-            measureStats(writer, 10, 100, processPerTime, stack);
         }
     }
 
-    private static void measureStats(CsvFileWriter writer, int nodesAmount, int packagesPerNode, int processPerTime, BlockingQueue<DataPackage> stack) {
-        RingProcessor ringProcessor = new RingProcessor(nodesAmount, packagesPerNode, processPerTime, stack);
+    private static void measureStats(String prefix, int nodesAmount, int packagesPerNode, int processPerTime, NodeFactory nodeFactory) {
+        CsvFileWriter writer = new CsvFileWriter(prefix);
+        RingProcessor ringProcessor = new RingProcessor(nodesAmount,
+                packagesPerNode,
+                processPerTime,
+                nodeFactory.createNodes(nodesAmount, packagesPerNode, processPerTime)
+        );
         ringProcessor.startProcessing();
 
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleWithFixedDelay(new Thread(() -> saveStats(writer, ringProcessor)), 20, 10, TimeUnit.SECONDS);
 
         try {
-            Thread.sleep(150_000);
+            Thread.sleep(75_000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

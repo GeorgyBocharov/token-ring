@@ -1,4 +1,4 @@
-package com.atp.hw4.task2.writer;
+package com.atp.hw4.task2.service;
 
 import com.atp.hw4.task2.entities.Statistics;
 import lombok.RequiredArgsConstructor;
