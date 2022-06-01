@@ -13,6 +13,8 @@ public interface Node {
 
     int getBufferSize();
 
+    void resetStats();
+
     void addToBufferStack(DataPackage dataPackage);
 
     void stopProcessing();

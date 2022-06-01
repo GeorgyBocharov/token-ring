@@ -10,8 +10,9 @@ import java.util.concurrent.BlockingQueue;
 public interface NodeFactory {
     default List<WorkerNode> createNodes(int number, int packages, int processingPerTime) {
         List<WorkerNode> nodes = new ArrayList<>();
-        for (int i = 0; i < number; i++) {
-            nodes.add(createNode(i, packages, processingPerTime));
+        nodes.add(createNode(0, packages, processingPerTime));
+        for (int i = 1; i < number; i++) {
+            nodes.add(createNode(i, 0, processingPerTime));
         }
         for (int i = 0; i < number - 1; i++) {
             nodes.get(i).setNextNodeInfo(nodes.get(i + 1));

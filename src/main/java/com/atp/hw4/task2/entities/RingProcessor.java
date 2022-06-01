@@ -27,6 +27,10 @@ public class RingProcessor {
         nodes.forEach(Thread::start);
     }
 
+    public void resetStats() {
+        startTime = System.currentTimeMillis();
+        nodes.forEach(WorkerNode::resetStats);
+    }
 
     public Statistics getStats() {
         int totalLatency = 0;

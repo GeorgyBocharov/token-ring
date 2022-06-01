@@ -21,6 +21,7 @@ public class WorkerNode extends Thread implements Node {
     private final AtomicInteger packageTotalLatency = new AtomicInteger(0);
     private final AtomicInteger packageLoss = new AtomicInteger(0);
 
+
     private final int processingPerTime;
 
     private WorkerNode nextNode;
@@ -71,6 +72,12 @@ public class WorkerNode extends Thread implements Node {
     @Override
     public int getBufferSize() {
         return bufferStack.size();
+    }
+
+    @Override
+    public void resetStats() {
+        processedPackages.set(0);
+        packageTotalLatency.set(0);
     }
 
     @Override
